@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>莞香非遗文化3D数字博物馆</title>
+    <link rel="stylesheet" href="./src/styles/main.css?v=4">
+    <style>
+        /* ====== 强制布局：430px居中 ====== */
+        *, *::before, *::after { box-sizing: border-box !important; }
+        html {
+            margin: 0 !important; padding: 0 !important;
+            overflow: hidden !important;
+            width: 100vw !important; height: 100vh !important;
+            background: #0a0a14 !important;
+        }
+        body {
+            margin: 0 !important; padding: 0 !important;
+            overflow: hidden !important;
+            width: 100vw !important; height: 100vh !important;
+            background: #0a0a14 !important;
+        }
+        #app {
+            width: 100vw !important;
+            height: 100vh !important;
+            position: relative !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+        }
+        #canvas-container {
+            position: absolute !important;
+            top: 0 !important; left: 0 !important;
+            width: 100% !important; height: 100% !important;
+        }
+        #canvas-container canvas {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        #loading-screen { z-index: 10000 !important; }
+    </style>
+</head>
+<body>
+    <!-- 加载界面 -->
+        <div id="loading-screen">
+        <div class="loading-content">
+            <div class="loading-icon">
+                <div class="loading-spinner"></div>
+            </div>
+            <h1>???????</h1>
+            <p class="loading-status">???????...</p>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+            <p class="loading-percent">0%</p>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
+    <div id="app">
+        <!-- 顶部导航栏 - 精简 -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <span class="logo-icon">🏛️</span>
+                    <span class="logo-text">莞香数字博物馆</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn-icon" id="btn-fullscreen" title="??">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                </button>
+                <button class="btn-icon" id="btn-help" title="??">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- 3D画布容器 -->
+        <div id="canvas-container"></div>
+
+        <!-- 当前展品名称悬浮标签 -->
+        <div class="exhibit-label" id="exhibit-label">
+            <span class="exhibit-label-icon">🪵</span>
+            <span class="exhibit-label-name">莞香原木</span>
+        </div>
+
+        <!-- 展品切换指示器（底部小圆点） -->
+        <div class="exhibit-dots" id="exhibit-dots">
+            <span class="dot active" data-exhibit="real" title="莞香原木"></span>
+            <span class="dot" data-exhibit="real2" title="莞香藏品"></span>
+            <span class="dot" data-exhibit="real3" title="莞香香具"></span>
+        </div>
+
+        <!-- 底部操作栏 - 极简 -->
+        <footer class="footer-controls">
+            <div class="ctrl-group">
+                <button class="ctrl-btn" id="btn-reset" title="????">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                </button>
+                <button class="ctrl-btn" id="btn-rotate" title="????">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                </button>
+            </div>
+            <div class="ctrl-divider"></div>
+            <div class="ctrl-group">
+                <button class="ctrl-btn" id="btn-info" title="????">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                </button>
+                <button class="ctrl-btn" id="btn-audio" title="????">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                </button>
+            </div>
+            <div class="ctrl-divider"></div>
+            <div class="ctrl-group">
+                <button class="ctrl-btn" id="btn-screenshot" title="????">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </button>
+                <button class="ctrl-btn" id="btn-atmosphere" title="????">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+            </div>
+        </footer>
+
+        <!-- 底部信息面板（默认隐藏，点击ℹ️展开） -->
+        <div class="info-panel" id="info-panel">
+            <div class="info-panel-header">
+                <div class="info-panel-tabs">
+                    <button class="info-tab active" data-tab="intro">简介</button>
+                    <button class="info-tab" data-tab="detail">详情</button>
+                    <button class="info-tab" data-tab="data">数据</button>
+                </div>
+                <button class="info-panel-close" id="info-panel-close">✕</button>
+            </div>
+            <div class="info-panel-body">
+                <!-- 简介标签页 -->
+                <div class="info-pane active" id="tab-intro">
+                    <div class="info-title-row">
+                        <h2 id="info-exhibit-name">莞香树</h2>
+                        <span class="badge">国家二级保护植物</span>
+                    </div>
+                    <div class="info-desc" id="info-exhibit-desc">
+                        <p>莞香(学名:Aquilaria sinensis),又称土沉香、女儿香,是产自广东东莞的沉香珍品,为瑞香科沉香属常绿乔木。</p>
+                    </div>
+                    <div class="info-tags">
+                        <span class="tag">非遗文化</span>
+                        <span class="tag">地理标志</span>
+                        <span class="tag">药用价值</span>
+                    </div>
+                </div>
+
+                <!-- 详情标签页 -->
+                <div class="info-pane" id="tab-detail">
+                    <div class="detail-section">
+                        <h3>📜 历史渊源</h3>
+                        <ul>
+                            <li>东汉已有记载</li>
+                            <li>唐代引入广东</li>
+                            <li>明清达到鼎盛</li>
+                            <li>明代寮步镇为全国最大香市</li>
+                        </ul>
+                    </div>
+                    <div class="detail-section">
+                        <h3>🌿 结香机制</h3>
+                        <p>需香树受外伤或真菌感染,刺激树脂分泌并长期沉积,经多年醇化才形成。</p>
+                        <ul>
+                            <li>树龄: 7-8年以上</li>
+                            <li>胸径: 20厘米以上</li>
+                            <li>结香时间: 数年至数十年</li>
+                        </ul>
+                    </div>
+                    <div class="detail-section">
+                        <h3>💎 核心价值</h3>
+                        <div class="value-cards">
+                            <div class="value-card">
+                                <span class="value-icon">💊</span>
+                                <h4>药用价值</h4>
+                                <p>行气止痛、温中止呕、纳气平喘</p>
+                            </div>
+                            <div class="value-card">
+                                <span class="value-icon">🌸</span>
+                                <h4>香用价值</h4>
+                                <p>熏香、礼佛、茶道、香道</p>
+                            </div>
+                            <div class="value-card">
+                                <span class="value-icon">🏆</span>
+                                <h4>文化价值</h4>
+                                <p>国家级非物质文化遗产</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据标签页 -->
+                <div class="info-pane" id="tab-data">
+                    <div class="data-card">
+                        <h3>📊 产业数据</h3>
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <span class="data-label">种植面积</span>
+                                <span class="data-value">12,500亩</span>
+                                <span class="data-trend up">↑ 15.2%</span>
+                            </div>
+                            <div class="data-bar-track">
+                                <div class="data-bar-fill" style="width: 75%; background: linear-gradient(90deg, #667eea, #764ba2);"></div>
+                            </div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <span class="data-label">年产值</span>
+                                <span class="data-value">6.5亿元</span>
+                                <span class="data-trend up">↑ 18.5%</span>
+                            </div>
+                            <div class="data-bar-track">
+                                <div class="data-bar-fill" style="width: 65%; background: linear-gradient(90deg, #4CAF50, #8BC34A);"></div>
+                            </div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <span class="data-label">从业人数</span>
+                                <span class="data-value">8,500人</span>
+                                <span class="data-trend up">↑ 12.3%</span>
+                            </div>
+                            <div class="data-bar-track">
+                                <div class="data-bar-fill" style="width: 55%; background: linear-gradient(90deg, #FF9800, #FFC107);"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="data-card">
+                        <h3>📈 发展趋势</h3>
+                        <div class="trend-chart">
+                            <div class="trend-bar-group">
+                                <div class="trend-bar" style="height: 40%;"><span>2020</span></div>
+                                <div class="trend-bar" style="height: 55%;"><span>2021</span></div>
+                                <div class="trend-bar" style="height: 65%;"><span>2022</span></div>
+                                <div class="trend-bar" style="height: 78%;"><span>2023</span></div>
+                                <div class="trend-bar active" style="height: 90%;"><span>2024</span></div>
+                            </div>
+                        </div>
+                    </div>
+            <div class="info-panel-actions">
+                <button class="action-btn" id="btn-share" title="??">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    <span>??</span>
+                </button>
+                <button class="action-btn" id="btn-favorite" title="??">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    <span>??</span>
+                </button>
+            </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 热点提示 -->
+        <div id="hotspot-tooltip" class="hotspot-tooltip">
+            <div class="tooltip-content">
+                <h4></h4>
+                <p></p>
+            </div>
+        </div>
+
+        <!-- 帮助弹窗 -->
+        <div id="help-modal" class="modal">
+            <div class="modal-content">
+                <span class="modal-close">&times;</span>
+                <h2>????</h2>
+                <div class="help-content">
+                    <div class="help-item">
+                        <span class="help-icon">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#667eea" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M6 16h.01M10 16h.01M14 16h.01"/></svg>
+                        </span>
+                        <div>
+                            <h3>????</h3>
+                            <p>????: ????</p>
+                            <p>????: ????</p>
+                            <p>??: ????</p>
+                            <p>??: ????</p>
+                        </div>
+                    </div>
+                    <div class="help-item">
+                        <span class="help-icon">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#667eea" stroke-width="1.5"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="14"/><line x1="10" y1="10" x2="10" y2="14"/><line x1="14" y1="10" x2="14" y2="14"/><line x1="18" y1="10" x2="18" y2="14"/></svg>
+                        </span>
+                        <div>
+                            <h3>???</h3>
+                            <p>R: ????</p>
+                            <p>A: ????</p>
+                            <p>F: ????</p>
+                            <p>I: ????</p>
+                            <p>S: ????</p>
+                            <p>Esc: ????</p>
+                        </div>
+                    </div>
+                    <div class="help-item">
+                        <span class="help-icon">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#667eea" stroke-width="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                        </span>
+                        <div>
+                            <h3>????</h3>
+                            <p>????: ????</p>
+                            <p>????: ????</p>
+                            <p>????: ????</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./src/main.js?v=5"></script>
+</body>
+</html>
